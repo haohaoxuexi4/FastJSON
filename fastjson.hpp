@@ -17,13 +17,14 @@
 #define PARSE_ALLSPACE 111;  //解析一个值时候都是空白，没有内容
 #define PARSE_SPACEVALUE 112;//一个值后，空白，后还有值
 #define PARSE_INVALID  113;  //错误的类型，
-
+#define PARSE_NUMBER_TOO_BIG 114   //解析数字过大
 //json类型，，null,(true,false),number,string,array,object
 typedef enum{FAST_null,FAST_false,FAST_true,FAST_number,FAST_string,FAST_array,FAST_object} jsonType;
 
 
 //json 解析的值
 typedef struct{
+    double  number;
     jsonType type;
 }jsonValue;
 
@@ -39,6 +40,8 @@ public:
     int fastjson_parse();
     jsonType fastjson_gettype();
     
+    //---number---//
+    double  fastjson_getnumber();
     
 private:
     
@@ -57,15 +60,17 @@ private:
     
     //-----number--------//
     
-    
+    int  fastjson_parse_number(const char* json);
     //-----string------//
     
-    
+    //int  fastjson_parse_string(const char* json);
     
     //-----array------//
-    
+   // int  fastjson_parse_array(const char* json);
     
     //-----object-----//
+   // int  fastjson_parse_object(const char* json);
+    
     
     jsoncontex jsoncontex;
     

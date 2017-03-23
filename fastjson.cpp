@@ -8,6 +8,12 @@
 
 #include "fastjson.hpp"
 #include <assert.h>
+#include <errno.h>   /* errno, ERANGE */
+#include <math.h>    /* HUGE_VAL */
+
+
+#define ISDIGIT(ch) ((ch)>='0'&& (ch)<='9')
+#define ISDIGIT19(ch) ((ch)>='1'&& (ch)<='9')
 FastJson::FastJson(const char* json)
 {
     jsoncontex.json=json;
@@ -30,6 +36,7 @@ jsonType FastJson::fastjson_gettype()
 {
     return value_.type;
 }
+
 
 //-----null------------//
 int FastJson::fastjson_parse_null(const char* json)
@@ -69,6 +76,49 @@ int FastJson::fastjson_parse_false(const char* json)
     }
     return PARSE_INVALID;
 }
+//-------number----//
+int FastJson::fastjson_parse_number(const char* json)
+{
+    printf("number parse=%s\n",json);
+    assert(json!=NULL);
+    const char* p=json;
+    //去除杂质，除去不合法的数字表达形式
+    if (*p == '-') p++;
+    if (*p == '0') p++;
+    else {
+        if (!ISDIGIT19(*p))  return PARSE_INVALID;
+        for (p++; ISDIGIT(*p); p++);
+    }
+    if (*p == '.') {
+        
+        p++;
+        if (!ISDIGIT(*p)) return PARSE_INVALID;
+        for (p++; ISDIGIT(*p); p++);
+    }
+    if (*p == 'e' || *p == 'E') {
+        
+        p++;
+        if (*p == '+' || *p == '-') p++;
+        if (!ISDIGIT(*p)) return PARSE_INVALID;
+        for (p++; ISDIGIT(*p); p++);
+    }
+    errno = 0;
+    value_.number= strtod(json, NULL);
+    if (errno == ERANGE && (value_.number == HUGE_VAL || value_.number == -HUGE_VAL))
+        return PARSE_NUMBER_TOO_BIG;
+    value_.type = FAST_number;
+    json = p;
+    return PARSE_OK;
+
+}
+
+double FastJson::fastjson_getnumber()
+{
+    return value_.number;
+}
+
+
+//----------string--------///
 
 int FastJson::fastjson_parse()
 {
@@ -100,7 +150,21 @@ int FastJson::fastjson_parse_value(const char* fastjson)
         case 'f': return fastjson_parse_false(fastjson);
         case 't':  return fastjson_parse_true(fastjson);
         case '\0':return PARSE_ALLSPACE;
-        default:return PARSE_INVALID;
+        case '0':return fastjson_parse_number(fastjson);
+        case '1':return fastjson_parse_number(fastjson);
+        case '2':return fastjson_parse_number(fastjson);
+        case '3':return fastjson_parse_number(fastjson);
+        case '4':return fastjson_parse_number(fastjson);
+        case '5':return fastjson_parse_number(fastjson);
+        case '6':return fastjson_parse_number(fastjson);
+        case '7':return fastjson_parse_number(fastjson);
+        case '8':return fastjson_parse_number(fastjson);
+        case '9':return fastjson_parse_number(fastjson);
+            
+      //  case '"': return fastjson_parse_string(fastjson);  //string
+        //case '[': return fastjson_parse_array(fastjson);    //array
+      //  case '{': return fastjson_parse_object(fastjson);   //object
+        default: return PARSE_INVALID;
             
     }
     

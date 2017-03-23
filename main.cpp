@@ -11,10 +11,11 @@
 int main(int argc, const char * argv[]) {
     // insert code here...
     
-    FastJson json("  tru");
+    FastJson json(" 34.88e3");
     //json.
     json.fastjson_parse();
     printf("null type=%d\n",json.fastjson_gettype());
+    printf("%f\n",json.fastjson_getnumber());
     //json.fastjson_parse("false n");
    // printf("null type=%d\n",json.fastjson_gettype());
 
