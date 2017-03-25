@@ -29,5 +29,22 @@ int main(int argc, const char * argv[]) {
    // printf("null type=%d\n",json.fastjson_gettype());
 
     json1.valuefree();
+    
+    /*
+    FastJson json2("[123,5]");
+    json2.fastjson_parse();
+    
+    printf("tyep=%d\n",json2.fastjson_getarrayone(0));
+    json2.valuefree();
+    */
+     
+    FastJson json3("{\"123\":5}");
+    json3.fastjson_parse();
+    
+   // printf("tyep=%d\n",json2.fastjson_getarrayone(0).type);
+    printf("man stirng =%s",json3.fastjson_getobjectkey(0));
+    
+    json3.valuefree();
+    
     return 0;
 }

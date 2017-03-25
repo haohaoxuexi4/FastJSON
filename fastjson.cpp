@@ -136,6 +136,7 @@ int FastJson::fastjson_parse_number(const char* json)
         return PARSE_NUMBER_TOO_BIG;
     value_.type = FAST_number;
     json = p;
+    jsoncontex.json=json;
     return PARSE_OK;
 
 }
@@ -170,6 +171,7 @@ int FastJson::fastjson_parse_string(const char* json)
     assert(json!=nullptr);
     const char* p=json;
     p++;   //跳过‘“’ 字符
+    jsoncontex.json++;
     char c;
     while(1)
     {
@@ -179,6 +181,7 @@ int FastJson::fastjson_parse_string(const char* json)
         switch (c) {
             case '\"':
                  fastjson_set_string();
+                jsoncontex.json=p;
                 return PARSE_OK;
                 
             case '\0':
@@ -192,9 +195,200 @@ int FastJson::fastjson_parse_string(const char* json)
     
     return PARSE_OK;
 }
+//----------array---------//
 
 
+jsonValue FastJson::fastjson_getarrayone(int index)
+{
 
+    return value_.u.a.val[index];
+}
+int  FastJson::fastjson_getarraylen()
+{
+
+    return value_.u.a.size;
+}
+int FastJson::fastjson_parse_array(const char* json)
+{
+
+    printf("array\n");
+    json++;// 跳过‘【’
+    jsoncontex.json=json;
+    if(*json==']')
+    {
+        //空array
+        value_.u.a.val=NULL;
+        value_.u.a.size=0;
+        value_.type=FAST_array;
+        return PARSE_OK;
+    }
+    
+    for(;;)
+    {
+        int back=fastjson_parse_value(jsoncontex.json);
+        if (back!=PARSE_OK) {
+            return back;
+        }
+        //放入数组
+       // int size=sizeof(jsonValue);
+        //memcpy(value_.u.a.val,&value_,size);
+        jsoncontex.jsonvaluecontex.push_back(value_);
+        if(*jsoncontex.json==',')
+        {
+            printf(".........\n");
+            //json++;
+            jsoncontex.json++;
+            //return back;
+        }
+        else if(*jsoncontex.json==']')
+        {
+            printf("]]]]]]]]\n");
+        
+            //结束
+            value_.u.a.val=new jsonValue[jsoncontex.jsonvaluecontex.size()];
+            memcpy(value_.u.a.val, &(*jsoncontex.jsonvaluecontex.begin()), sizeof(jsonValue)*jsoncontex.jsonvaluecontex.size());
+            
+            return back;
+        }
+        
+        
+    
+    }
+    //return 1;
+}
+
+//--------object--------//
+int FastJson::fastjson_getobjectsize()
+{
+    return value_.u.o.size;
+}
+int FastJson::fastjson_getobjectkeysize(int index)
+{
+    return value_.u.o.member[index].ksize;
+}
+char* FastJson::fastjson_getobjectkey(int index)
+{
+    return value_.u.o.member[index].k;
+}
+jsonValue FastJson::fastjson_getobjectone(int index)
+{
+    return *value_.u.o.member[index].vk;
+}
+int FastJson::fastjson_parse_string_objectkey(const char* json,char* keystring)  //解析object  key
+{
+    assert(json!=nullptr);
+    const char* p=json;
+    p++;   //跳过‘“’ 字符
+    jsoncontex.json++;
+    char c;
+    while(1)
+    {
+        c=*p++;
+        printf("ddd%c\n",c);
+        
+        switch (c) {
+            case '\"':
+                jsoncontex.json=p;
+                
+                return 999;
+                
+            case '\0':
+                printf("dagdadga\n");
+                break;
+               // return 999;
+            default: jsoncontex.contexstring.push_back(c);
+                
+                
+                
+        }
+    }
+    
+    jsoncontex.json=p;
+    //return PARSE_OK;
+}
+int FastJson::fastjson_parse_object(const char* json)
+{
+
+    printf("object\n");
+    jsoncontex.json++; //跳过‘}’
+    
+    if(*jsoncontex.json=='}')
+    {
+        //空白 object
+        value_.type=FAST_object;
+        value_.u.o.member->k=NULL;
+        value_.u.o.member->ksize=0;
+        value_.u.o.member->vk=NULL;
+        value_.u.o.member=NULL;
+        value_.u.o.size=0;
+        return PARSE_OK;
+    }
+    jsonmember mem;
+    char* keystring=NULL;
+    for (;;) {
+        
+        printf("object  \n");
+        //mem 初始化
+        /*
+        for (int i=0; i<value_.u.o.size; i++) {
+            value_.u.o.member[i]
+        }
+        value_.u.o.member->k=NULL;
+        value_.u.o.member->ksize=0;
+        value_.u.o.member->vk=NULL;
+        value_.u.o.member=NULL;
+        //value_.u.o.size=0;
+        */
+        
+        if (*jsoncontex.json!='"') {
+            
+            return  9999;
+        }
+        //解析  key  放入到mem中
+        fastjson_parse_string_objectkey(jsoncontex.json,keystring);
+        mem.k=new char[jsoncontex.contexstring.size()];
+        memcpy(mem.k,&(*jsoncontex.contexstring.begin()), jsoncontex.contexstring.size());
+
+       // mem.k=keystring;
+       // mem.ksize=sizeof(keystring);
+        printf("keystring=%s\n",mem.k);
+        if(*jsoncontex.json==':')
+        {
+            jsoncontex.json++;
+            //return 9999;
+        }
+        printf("jsoncontse.json=%s\n",jsoncontex.json);
+        int back=fastjson_parse_value(jsoncontex.json);
+        if (back!=PARSE_OK) {
+            printf("back!=parse_ok\n");
+            return back;
+        }
+        //得到value   放入到mem中，
+        memcpy(mem.vk, &value_, sizeof(jsonValue));
+        
+        jsoncontex.jsonmembercontex.push_back(mem);
+        
+        if (*jsoncontex.json==',') {
+            printf(",,,,,,,\n");
+            jsoncontex.json++;
+        }
+        else if(*jsoncontex.json=='}')
+        {
+            printf("}}}}}}}}\n");
+            //结束
+            value_.type=FAST_object;
+            value_.u.o.size=jsoncontex.jsonmembercontex.size();
+            value_.u.o.member=new jsonmember[jsoncontex.jsonmembercontex.size()];
+            memcpy(value_.u.o.member, &(*jsoncontex.jsonmembercontex.begin()), value_.u.o.size*sizeof(jsonValue));
+            
+            return PARSE_OK;
+        }
+        
+        
+    }
+    return 0;
+}
+/////////////////////////
 int FastJson::fastjson_parse()
 {
 
@@ -238,8 +432,8 @@ int FastJson::fastjson_parse_value(const char* fastjson)
         case '9':return fastjson_parse_number(fastjson);
             
         case '"': return fastjson_parse_string(fastjson);    //string
-        //case '[': return fastjson_parse_array(fastjson);    //array
-      //  case '{': return fastjson_parse_object(fastjson);   //object
+        case '[': return fastjson_parse_array(fastjson);    //array
+        case '{': return fastjson_parse_object(fastjson);   //object
         default: return PARSE_INVALID;
             
     }

@@ -25,8 +25,27 @@ typedef enum{FAST_null,FAST_false,FAST_true,FAST_number,FAST_string,FAST_array,F
 
 
 //json 解析的值
+struct jsonValue ;
+
+//member
 typedef struct{
+    char* k;        //key （string）
+    int  ksize;     // key size
+    jsonValue* vk;
+}jsonmember;
+//
+struct jsonValue{
+    
+    
     union{
+        struct {
+            jsonmember* member;
+            int size;
+        }o;                             //object
+        struct{
+            jsonValue* val;
+            int size;
+        }a;                             //array
         struct {
             char* addr;
             int len;
@@ -34,12 +53,13 @@ typedef struct{
         double number;                  //number;
     }u;
     jsonType type;
-}jsonValue;
+};
 
 typedef struct{
     const  char* json;
     std::vector<char> contexstring;
-    
+    std::vector<jsonValue>  jsonvaluecontex;
+    std::vector<jsonmember>  jsonmembercontex;
 }jsoncontex;
 class FastJson:noncopy
 {
@@ -60,6 +80,17 @@ public:
     //-----string----//
     char* fastjson_getstring();
     int  fastjson_getstringlen();
+    
+    
+    //----array----//
+    jsonValue fastjson_getarrayone(int index);
+    int   fastjson_getarraylen();
+    
+    //-----object---//
+    int  fastjson_getobjectsize();
+    int  fastjson_getobjectkeysize(int index);
+    char*  fastjson_getobjectkey(int index);
+    jsonValue  fastjson_getobjectone(int index);
     
 private:
     
@@ -82,14 +113,15 @@ private:
     //-----string------//
     
     int  fastjson_parse_string(const char* json);
+    int  fastjson_parse_string_objectkey(const char* json,char* keystring);  //解析object  key
     
     void fastjson_set_string();
     
     //-----array------//
-   // int  fastjson_parse_array(const char* json);
+    int  fastjson_parse_array(const char* json);
     
     //-----object-----//
-   // int  fastjson_parse_object(const char* json);
+    int  fastjson_parse_object(const char* json);
     
     
     jsoncontex jsoncontex;
