@@ -20,6 +20,10 @@ using namespace::std;
 #define PARSE_SPACEVALUE 112//一个值后，空白，后还有值
 #define PARSE_INVALID  113 //错误的类型，
 #define PARSE_NUMBER_TOO_BIG 114   //解析数字过大
+#define PARSE_STRING_ERROR  115    //解析string 问题
+
+#define PARSE_OBJECT_KEY_NULL 117   //键空
+#define PARSE_OBJECT_ERROR  118    //解析object 错误
 //json类型，，null,(true,false),number,string,array,object
 typedef enum{FAST_null,FAST_false,FAST_true,FAST_number,FAST_string,FAST_array,FAST_object} jsonType;
 
@@ -69,6 +73,7 @@ public:
     
     void  valuefree();
     void  contexfree();
+    void  valuecontexfree(); //中间值 空间释放
     
     int fastjson_parse();
     //---通用----//
@@ -113,7 +118,7 @@ private:
     //-----string------//
     
     int  fastjson_parse_string(const char* json);
-    int  fastjson_parse_string_objectkey(const char* json,char* keystring);  //解析object  key
+    int  fastjson_parse_string_objectkey(const char* json);  //解析object  key
     
     void fastjson_set_string();
     

@@ -38,11 +38,33 @@ void FastJson::valuefree()
         value_.u.s.addr=NULL;
         value_.u.s.len=0;
         value_.u.number=0.0;
-        
+    }
+    else if(value_.type==FAST_array)
+    {
+        delete []value_.u.a.val;
+        value_.u.a.val=NULL;
+        value_.u.a.size=0;
+    }
+    else if(value_.type==FAST_object)
+    {
+        delete []value_.u.o.member;
+        value_.u.o.member=NULL;
+        value_.u.o.size=0;
     }
     value_.type=FAST_null;
 }
-
+void FastJson::valuecontexfree()
+{
+    jsoncontex.contexstring.clear();
+    for (int i=0; i<jsoncontex.jsonvaluecontex.size(); i++) {
+        delete jsoncontex.jsonmembercontex[i].vk;
+        delete [] jsoncontex.jsonmembercontex[i].k;
+        jsoncontex.jsonmembercontex[i].ksize=0;
+   }
+    jsoncontex.jsonmembercontex.clear();
+    //jsonconte.jsonvaluecontex.size()；
+   // jsoncontex.jsonmembercontex.size()
+}
 
 void FastJson::contexfree()
 {
@@ -176,16 +198,16 @@ int FastJson::fastjson_parse_string(const char* json)
     while(1)
     {
         c=*p++;
-        printf("ddd%c\n",c);
+        //printf("ddd%c\n",c);
     
         switch (c) {
             case '\"':
-                 fastjson_set_string();
+                fastjson_set_string();
                 jsoncontex.json=p;
                 return PARSE_OK;
                 
             case '\0':
-                return 999;
+                return PARSE_STRING_ERROR;
             default: jsoncontex.contexstring.push_back(c);
                 
                 
@@ -232,29 +254,29 @@ int FastJson::fastjson_parse_array(const char* json)
         //放入数组
        // int size=sizeof(jsonValue);
         //memcpy(value_.u.a.val,&value_,size);
+        
         jsoncontex.jsonvaluecontex.push_back(value_);
+        memset(&value_, 0,sizeof(jsonValue));
         if(*jsoncontex.json==',')
         {
-            printf(".........\n");
-            //json++;
             jsoncontex.json++;
-            //return back;
+            
         }
         else if(*jsoncontex.json==']')
         {
-            printf("]]]]]]]]\n");
-        
+            //printf("]]]]]]]]\n");
+            jsoncontex.json++;
             //结束
             value_.u.a.val=new jsonValue[jsoncontex.jsonvaluecontex.size()];
             memcpy(value_.u.a.val, &(*jsoncontex.jsonvaluecontex.begin()), sizeof(jsonValue)*jsoncontex.jsonvaluecontex.size());
-            
+            value_.u.a.size=jsoncontex.jsonvaluecontex.size();
+            value_.type=FAST_array;
+
             return back;
         }
         
-        
-    
     }
-    //return 1;
+
 }
 
 //--------object--------//
@@ -274,9 +296,10 @@ jsonValue FastJson::fastjson_getobjectone(int index)
 {
     return *value_.u.o.member[index].vk;
 }
-int FastJson::fastjson_parse_string_objectkey(const char* json,char* keystring)  //解析object  key
+int FastJson::fastjson_parse_string_objectkey(const char* json)  //解析object  key
 {
     assert(json!=nullptr);
+    jsoncontex.contexstring.clear(); //清空下
     const char* p=json;
     p++;   //跳过‘“’ 字符
     jsoncontex.json++;
@@ -284,27 +307,20 @@ int FastJson::fastjson_parse_string_objectkey(const char* json,char* keystring) 
     while(1)
     {
         c=*p++;
-        printf("ddd%c\n",c);
-        
+        //printf("ddd%c\n",c);
         switch (c) {
             case '\"':
                 jsoncontex.json=p;
-                
-                return 999;
+                //printf("parse key=%s",&jsoncontex.contexstring[0]);
+                return PARSE_OK;
                 
             case '\0':
-                printf("dagdadga\n");
-                break;
-               // return 999;
+                return PARSE_STRING_ERROR;
             default: jsoncontex.contexstring.push_back(c);
-                
-                
-                
         }
     }
-    
     jsoncontex.json=p;
-    //return PARSE_OK;
+    
 }
 int FastJson::fastjson_parse_object(const char* json)
 {
@@ -323,64 +339,79 @@ int FastJson::fastjson_parse_object(const char* json)
         value_.u.o.size=0;
         return PARSE_OK;
     }
-    jsonmember mem;
-    char* keystring=NULL;
+    
     for (;;) {
         
-        printf("object  \n");
-        //mem 初始化
-        /*
-        for (int i=0; i<value_.u.o.size; i++) {
-            value_.u.o.member[i]
+        jsonmember mem;
+        memset(&mem, 0, sizeof(jsonmember));
+       // printf("mem key=%s\n",mem.k);
+       // printf("object  \n");
+        if (mem.k!=nullptr) {
+            delete []mem.k;
+            mem.k=NULL;
+            mem.ksize=0;
         }
-        value_.u.o.member->k=NULL;
-        value_.u.o.member->ksize=0;
-        value_.u.o.member->vk=NULL;
-        value_.u.o.member=NULL;
-        //value_.u.o.size=0;
-        */
+        if (mem.vk!=nullptr) {
+            delete mem.vk;
+            mem.vk=NULL;
+        }
+        valuefree();
+        memset(&value_, 0, sizeof(jsonValue));
         
+        //printf("mem2 key=%s\n",mem.k);
+     
         if (*jsoncontex.json!='"') {
             
-            return  9999;
+            return  PARSE_OBJECT_KEY_NULL;
         }
         //解析  key  放入到mem中
-        fastjson_parse_string_objectkey(jsoncontex.json,keystring);
-        mem.k=new char[jsoncontex.contexstring.size()];
+        parse_whitespace(jsoncontex.json);
+        fastjson_parse_string_objectkey(jsoncontex.json);
+        mem.k=new char[jsoncontex.contexstring.size()+1];
         memcpy(mem.k,&(*jsoncontex.contexstring.begin()), jsoncontex.contexstring.size());
-
-       // mem.k=keystring;
-       // mem.ksize=sizeof(keystring);
-        printf("keystring=%s\n",mem.k);
-        if(*jsoncontex.json==':')
+        mem.k[jsoncontex.contexstring.size()]='\0';
+        mem.ksize=jsoncontex.contexstring.size();
+        
+        //printf("keystring=%s\n",mem.k);
+        if(*jsoncontex.json!=':')
         {
-            jsoncontex.json++;
-            //return 9999;
+            return PARSE_OBJECT_ERROR;
         }
-        printf("jsoncontse.json=%s\n",jsoncontex.json);
+        jsoncontex.json++;
+        
+        //printf("jsoncontse.json=%s\n",jsoncontex.json);
+        parse_whitespace(jsoncontex.json);  //去掉无用空白
         int back=fastjson_parse_value(jsoncontex.json);
         if (back!=PARSE_OK) {
-            printf("back!=parse_ok\n");
+            printf("back!=parse_ok,back=%d,json=%s\n",back,jsoncontex.json);
             return back;
         }
-        //得到value   放入到mem中，
+        //得到value   放入到mem中
+        mem.vk=new jsonValue();
         memcpy(mem.vk, &value_, sizeof(jsonValue));
-        
+        printf("keystring=%s\n",mem.k);
         jsoncontex.jsonmembercontex.push_back(mem);
+        //printf("keystring2=%s\n",jsoncontex.jsonmembercontex[0].k);
         
         if (*jsoncontex.json==',') {
-            printf(",,,,,,,\n");
+            //printf(",,,,,,,\n");
             jsoncontex.json++;
         }
         else if(*jsoncontex.json=='}')
         {
-            printf("}}}}}}}}\n");
+            //printf("}}}}}}}}\n");
             //结束
             value_.type=FAST_object;
             value_.u.o.size=jsoncontex.jsonmembercontex.size();
             value_.u.o.member=new jsonmember[jsoncontex.jsonmembercontex.size()];
             memcpy(value_.u.o.member, &(*jsoncontex.jsonmembercontex.begin()), value_.u.o.size*sizeof(jsonValue));
             
+            for(int i=0;i<jsoncontex.jsonmembercontex.size();i++)
+            {
+                printf("i=%d,contextmemkey=%s,keysize=%d\n",i,jsoncontex.jsonmembercontex[i].k,jsoncontex.jsonmembercontex[i].ksize );
+            }
+            
+            //valuecontexfree(); //中间值 空间释放
             return PARSE_OK;
         }
         
@@ -395,19 +426,19 @@ int FastJson::fastjson_parse()
     
     parse_whitespace(jsoncontex.json);
     
-    printf("fasjson=%s\n",jsoncontex.json);
+  //  printf("fasjson=%s\n",jsoncontex.json);
     int backcode=fastjson_parse_value(jsoncontex.json);
     
     if (backcode==PARSE_OK)
     {
         parse_whitespace(jsoncontex.json);
         if (jsoncontex.json[0]!='\0') {
-            printf("fasjson2=%s\n",jsoncontex.json);
+    //        printf("fasjson2=%s\n",jsoncontex.json);
             return PARSE_SPACEVALUE;
         }
     }
     
-    printf("fasjson3=%s\n",jsoncontex.json);
+    //printf("fasjson3=%s\n",jsoncontex.json);
     contexfree();
     return backcode;
 }

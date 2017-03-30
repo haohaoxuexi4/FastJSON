@@ -11,38 +11,22 @@
 int main(int argc, const char * argv[]) {
     // insert code here...
    
+ 
+    const char* json="{\"title\": \"Design Patterns\",\"subtitle\": \"Elements of Reusable Object-Oriented Software\",\"author\": [\"Erich Gamma\",\"Richard Helm\",\"Ralph Johnson\",\"John Vlissides\"],\"year\": 2009,\"weight\": 1.8,\"hardcover\": true,\"publisher\": {\"Company\": \"Pearson Education\",\"Country\": \"India\"},\"website\": null}";
     /*
-    FastJson json(" 34.88e3");
-    //json.
-    json.fastjson_parse();
-    printf("null type=%d\n",json.fastjson_gettype());
-    printf("%f\n",json.fastjson_getnumber());
-    
-    */
-    
-   FastJson json1("\"hello  world\"");
-    json1.fastjson_parse();
-    printf("string=%s,len=%d",json1.fastjson_getstring(),json1.fastjson_getstringlen());
-    //printf("test=%s\n",test);
-   // printf("test=%c\n",*test);
-    //json.fastjson_parse("false n");
-   // printf("null type=%d\n",json.fastjson_gettype());
-
-    json1.valuefree();
-    
-    /*
-    FastJson json2("[123,5]");
-    json2.fastjson_parse();
-    
-    printf("tyep=%d\n",json2.fastjson_getarrayone(0));
-    json2.valuefree();
-    */
-     
-    FastJson json3("{\"123\":5}");
+    FastJson json3("{\"title\": \"Design Patterns\",\"subtitle\": \"Elements of Reusable Object-Oriented Software\",\"author\": [\"Erich Gamma\",\"Richard Helm\",\"Ralph Johnson\",\"John Vlissides\"],\"year\": 2009,\"weight\": 1.8,\"hardcover\": true}");
+     */
+    FastJson json3(json);
     json3.fastjson_parse();
     
-   // printf("tyep=%d\n",json2.fastjson_getarrayone(0).type);
-    printf("man stirng =%s",json3.fastjson_getobjectkey(0));
+    int size=json3.fastjson_getobjectsize();
+    printf("size=%d\n",size);
+    for (int i=0; i<size; i++) {
+        printf("i=%d,key=\"%s\",keysize=%d\n",i,json3.fastjson_getobjectkey(i),json3.fastjson_getobjectkeysize(i));
+        jsonValue v=json3.fastjson_getobjectone(i);
+        printf("value tyep=%d\n",v.type);
+    }
+    //printf("man stirng =%s",json3.fastjson_getobjectkey(0));
     
     json3.valuefree();
     
